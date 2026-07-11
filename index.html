@@ -157,6 +157,7 @@
     <div class="header">
       <h1>🌍 旅行规划系统 V4 <span style="font-size: 12px; color: var(--warning); font-weight: normal;">支持任意插入 / 拖拽排序 / 多段换乘</span></h1>
       <div>
+        <button class="btn-text" @click="loadCloudData" style="color: var(--success); font-weight: bold;">📥 获取作者最新计划</button>
         <button class="btn-text" @click="exportData">导出 JSON</button>
         <button class="btn-text" @click="importData">导入 JSON (无损升级)</button>
       </div>
@@ -531,8 +532,23 @@
             combos.value = upgraded.combos;
             if (days.value.length > 0) activeDayId.value = days.value[0].id;
           } else {
-            days.value = [generateDay()];
-            activeDayId.value = days.value[0].id;
+            // V4.1新增：如果用户是第一次打开没有本地数据，自动尝试读取云端 plan.json
+            fetch('./plan.json')
+              .then(res => {
+                if (!res.ok) throw new Error('Not found');
+                return res.json();
+              })
+              .then(data => {
+                const upgraded = upgradeData(data);
+                days.value = upgraded.days;
+                combos.value = upgraded.combos;
+                if (days.value.length > 0) activeDayId.value = days.value[0].id;
+              })
+              .catch(err => {
+                // 如果云端没有文件，则生成默认空白天数
+                days.value = [generateDay()];
+                activeDayId.value = days.value[0].id;
+              });
           }
         });
 
@@ -756,6 +772,25 @@
           input.click();
         };
 
+        // 新增：手动拉取作者配置的 JSON 数据
+        const loadCloudData = () => {
+          fetch('./plan.json')
+            .then(res => {
+              if (!res.ok) throw new Error('未找到文件');
+              return res.json();
+            })
+            .then(data => {
+              const upgraded = upgradeData(data);
+              days.value = upgraded.days;
+              combos.value = upgraded.combos;
+              if (days.value.length > 0) activeDayId.value = days.value[0].id;
+              alert('✅ 成功同步了作者最新的旅行计划！');
+            })
+            .catch(err => {
+              alert('❌ 未找到作者分享的计划文件 (plan.json)。作者可能还未上传。');
+            });
+        };
+
         return {
           days, combos, activeDayId, activeDay, activeOption,
           draggedStopIndex, onDragStart, onDragEnter, onDrop, onDragEnd,
@@ -765,7 +800,7 @@
           addTransitRoute, removeTransitRoute, addSegment, removeSegment,
           saveCurrentCombo, removeCombo, applyCombo, getRouteMainMethod,
           getOptionCost, getOptionTime, globalTotalCost, globalTotalTime,
-          exportData, importData
+          exportData, importData, loadCloudData
         };
       }
     }).mount('#app');
