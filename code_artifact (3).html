@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>沉浸式旅行计划与方案对比 V4</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --text-main: #1e293b;
+      --text-regular: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; }
+    
+    .container { max-width: 1000px; margin: 0 auto; }
+    
+    /* 顶部导航与统计 */
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header h1 { font-size: 24px; font-weight: bold; color: var(--text-main); }
+    
+    .dashboard { background: var(--card-bg); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-around; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .stat-item { text-align: center; }
+    .stat-item .value { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .stat-item .label { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* 方案搭配管理区 */
+    .combo-section { background: var(--card-bg); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .combo-section h3 { font-size: 15px; margin-bottom: 12px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .combo-list { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .combo-card { padding: 8px 14px; border: 2px solid var(--primary); border-radius: 8px; background: #eff6ff; color: var(--primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; transition: all 0.2s; }
+    .combo-card:hover { background: var(--primary); color: white; }
+    .combo-card:hover .remove-combo-btn { color: white; }
+    .remove-combo-btn { background: none; border: none; color: #93c5fd; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .remove-combo-btn:hover { color: #ef4444 !important; transform: scale(1.2); }
+    .add-combo-btn { padding: 8px 16px; border: 2px dashed #cbd5e1; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; color: var(--text-regular); font-weight: bold; transition: 0.2s; }
+    .add-combo-btn:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
+
+    /* 通用按钮 */
+    button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-text { background: transparent; color: var(--text-regular); }
+    .btn-text:hover { background: #f1f5f9; color: var(--primary); }
+    .btn-danger-text { color: #ef4444; background: transparent; }
+    .btn-danger-text:hover { background: #fee2e2; }
+
+    /* 一级标签页 (天数) */
+    .day-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; border-bottom: 2px solid var(--border); }
+    .day-tab { padding: 10px 20px; border-radius: 8px 8px 0 0; font-size: 16px; font-weight: bold; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+    .day-tab:hover { color: var(--text-main); background: #f8fafc; }
+    .day-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: transparent; }
+    .add-day-btn { padding: 10px 16px; color: var(--primary); cursor: pointer; font-weight: bold; border-radius: 8px 8px 0 0; }
+    .add-day-btn:hover { background: #e0e7ff; }
+
+    /* 二级标签页 (方案) */
+    .option-tabs { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .option-tab { padding: 8px 16px; border-radius: 20px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-regular); cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-weight: 500; }
+    .option-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .option-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .option-tab.is-adopted { border: 2px solid var(--success); }
+    .option-tab.active.is-adopted { background: var(--success); border-color: var(--success); }
+    .add-opt-btn { border: 1px dashed var(--text-muted); background: transparent; font-weight: bold; }
+
+    /* 主内容区 */
+    .main-card { background: var(--card-bg); border-radius: var(--radius); padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .day-title-input { font-size: 20px; font-weight: bold; border: none; border-bottom: 2px dashed var(--border); padding: 4px 8px; outline: none; width: 60%; color: var(--text-main); }
+    .day-title-input:focus { border-bottom-color: var(--primary); }
+
+    /* 时间轴与拖拽排序 */
+    .timeline { padding-left: 20px; margin-top: 10px; }
+    .timeline-item { position: relative; padding-bottom: 12px; transition: transform 0.2s, opacity 0.2s; }
+    .timeline-item.is-dragging { opacity: 0.4; transform: scale(0.98); }
+    .timeline-item::before { content: ''; position: absolute; left: -26px; top: 12px; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); z-index: 2; border: 3px solid white; box-shadow: 0 0 0 1px var(--primary); }
+    .timeline-item::after { content: ''; position: absolute; left: -20px; top: 26px; bottom: 0; width: 2px; background: #cbd5e1; z-index: 1; }
+    .timeline-item:last-child::after { display: none; }
+    
+    /* 拖拽手柄 */
+    .drag-handle { cursor: grab; font-size: 18px; color: #94a3b8; padding: 0 8px; display: flex; align-items: center; justify-content: center; user-select: none; }
+    .drag-handle:active { cursor: grabbing; color: var(--primary); }
+
+    /* 地点卡片 */
+    .location-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .location-box .loc-icon { font-size: 24px; }
+    
+    /* 交通卡片与内部路线切换 */
+    .transit-box { background: white; border: 1px dashed #94a3b8; border-radius: 8px; padding: 16px; margin-left: 20px; margin-bottom: 12px; position: relative; }
+    .transit-box::before { content: '⬇'; position: absolute; left: -30px; top: 20px; color: var(--text-muted); font-size: 18px; }
+    
+    .transit-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
+    .t-tab { font-size: 13px; padding: 6px 12px; border-radius: 6px; background: #f1f5f9; cursor: pointer; color: var(--text-regular); font-weight: bold; display: flex; align-items: center; gap: 6px; transition: 0.2s; border: 1px solid transparent; }
+    .t-tab.active { background: #e0e7ff; color: var(--primary); border-color: #c7d2fe; }
+    .t-tab.add { background: transparent; border: 1px dashed var(--text-muted); }
+    .t-tab.add:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
+
+    /* 换乘段样式 (Segments) */
+    .segments-container { display: flex; flex-direction: column; gap: 12px; }
+    .segment-row { display: flex; gap: 12px; width: 100%; flex-wrap: wrap; align-items: flex-end; background: #f8fafc; padding: 12px; border-radius: 8px; position: relative; border-left: 3px solid #cbd5e1; }
+    .segment-row:focus-within { border-left-color: var(--primary); background: #f1f5f9; }
+    .segment-connector { position: absolute; left: -18px; top: -14px; color: #94a3b8; font-size: 12px; font-weight: bold; }
+    
+    .add-segment-btn { font-size: 12px; padding: 6px 12px; border: 1px dashed var(--primary); color: var(--primary); background: transparent; border-radius: 4px; align-self: flex-start; margin-top: 4px; }
+    .add-segment-btn:hover { background: #eff6ff; }
+
+    /* 表单与交互元素 */
+    .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .input-group label { font-size: 12px; color: var(--text-muted); font-weight: bold; }
+    .input-group input, .input-group select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 14px; background: white; width: 100%; transition: 0.2s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+    
+    .row { display: flex; gap: 16px; width: 100%; flex-wrap: wrap; align-items: center; }
+    
+    .remove-btn { color: var(--text-muted); background: none; font-size: 18px; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+    .remove-btn:hover { background: #fee2e2; color: #ef4444; }
+
+    .icon-btn { color: var(--text-muted); background: none; font-size: 18px; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; }
+    .icon-btn:hover { background: #e0e7ff; color: var(--primary); }
+
+    .insert-stop-divider { display: flex; align-items: center; margin: 4px 0 12px 20px; opacity: 0; transition: 0.2s; }
+    .timeline-item:hover .insert-stop-divider { opacity: 1; }
+    .insert-stop-divider::before, .insert-stop-divider::after { content: ''; flex: 1; height: 1px; background: dashed 1px var(--border); }
+    .insert-stop-btn { font-size: 12px; color: var(--primary); background: #eff6ff; padding: 2px 12px; border-radius: 12px; margin: 0 8px; font-weight: bold; border: 1px solid #bfdbfe; cursor: pointer; transition: 0.2s; }
+    .insert-stop-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .insert-stop-btn.paste-btn { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
+    .insert-stop-btn.paste-btn:hover { background: var(--warning); color: white; border-color: var(--warning); }
+
+    .add-stop-btn { width: 100%; padding: 16px; background: #f8fafc; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-regular); font-weight: bold; text-align: center; transition: 0.2s; cursor: pointer; margin-top: 10px; }
+    .add-stop-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0fdf4; }
+
+    /* 方案底部总结区 */
+    .option-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 20px; border-radius: 8px; }
+    .footer-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+    .footer-stat .label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; font-weight: bold; }
+    .footer-stat .val { font-size: 24px; font-weight: 800; color: var(--text-main); }
+    
+    .status-adopted { color: var(--success); font-weight: bold; display: flex; align-items: center; gap: 8px; font-size: 16px; }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    
+    <div class="header">
+      <h1>🌍 旅行规划系统 V4 <span style="font-size: 12px; color: var(--warning); font-weight: normal;">支持任意插入 / 拖拽排序 / 多段换乘</span></h1>
+      <div>
+        <button class="btn-text" @click="exportData">导出 JSON</button>
+        <button class="btn-text" @click="importData">导入 JSON (无损升级)</button>
+      </div>
+    </div>
+
+    <!-- 全局总结看板 -->
+    <div class="dashboard">
+      <div class="stat-item">
+        <div class="value">¥ {{ globalTotalCost }}</div>
+        <div class="label">预计总花费</div>
+      </div>
+      <div class="stat-item">
+        <div class="value">{{ globalTotalTime }} H</div>
+        <div class="label">交通总耗时</div>
+      </div>
+      <div class="stat-item">
+        <div class="value">{{ days.length }} 天</div>
+        <div class="label">行程总长</div>
+      </div>
+    </div>
+
+    <!-- 方案搭配组合区 (Combo Manager) -->
+    <div class="combo-section" v-if="days.length > 0">
+      <h3>🗂️ 我的行程搭配库 <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">保存并快速切换不同天数的方案组合</span></h3>
+      <div class="combo-list">
+        <div 
+          v-for="combo in combos" 
+          :key="combo.id" 
+          class="combo-card" 
+          @click="applyCombo(combo)"
+          title="点击应用此搭配"
+        >
+          <span>🎯 {{ combo.name }}</span>
+          <button class="remove-combo-btn" @click.stop="removeCombo(combo.id)" title="删除此搭配">✖</button>
+        </div>
+        <button class="add-combo-btn" @click="saveCurrentCombo">+ 将当前的全局打勾方案保存为新搭配</button>
+      </div>
+    </div>
+
+    <!-- 一级标签页：天数切换 -->
+    <div class="day-tabs">
+      <div 
+        v-for="(day, index) in days" 
+        :key="day.id"
+        class="day-tab"
+        :class="{ active: activeDayId === day.id }"
+        @click="activeDayId = day.id"
+      >
+        {{ day.title || ('第 ' + (index + 1) + ' 天') }}
+      </div>
+      <div class="add-day-btn" @click="addDay">+ 新增一天</div>
+    </div>
+
+    <!-- 选中天的内容 -->
+    <div v-if="activeDay" class="main-card">
+      <div class="card-header">
+        <input class="day-title-input" v-model="activeDay.title" placeholder="如：第一天 (北京出发前往上海)">
+        <button class="btn-danger-text" @click="removeDay(activeDay.id)">🗑️ 删除此天</button>
+      </div>
+
+      <!-- 二级标签页：方案切换 -->
+      <div class="option-tabs">
+        <div 
+          v-for="(opt, index) in activeDay.options" 
+          :key="opt.id"
+          class="option-tab"
+          :class="{ 
+            active: activeDay.activeOptionId === opt.id,
+            'is-adopted': activeDay.selectedOptionId === opt.id 
+          }"
+          @click="activeDay.activeOptionId = opt.id"
+        >
+          {{ opt.title || ('方案 ' + (index + 1)) }}
+          <span v-if="activeDay.selectedOptionId === opt.id">✅</span>
+        </div>
+        <button class="option-tab add-opt-btn" @click="addOption(activeDay)">+ 新增横向对比方案</button>
+      </div>
+
+      <!-- 选中方案的内容 (时间轴) -->
+      <div v-if="activeOption">
+        
+        <!-- 方案名称修改区 -->
+        <div class="row" style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+          <div class="input-group" style="flex: 1;">
+            <label style="color: var(--primary);">✨ 当前方案名称 (自定义)</label>
+            <input v-model="activeOption.title" placeholder="如：穷游特种兵版 / 轻松度假版" style="font-size: 16px; font-weight: bold; border-color: #cbd5e1;">
+          </div>
+        </div>
+
+        <div class="timeline">
+          <div 
+            v-for="(stop, sIndex) in activeOption.stops" 
+            :key="stop.id" 
+            class="timeline-item"
+            :class="{ 'is-dragging': draggedStopIndex === sIndex }"
+            draggable="true"
+            @dragstart="onDragStart($event, sIndex)"
+            @dragover.prevent
+            @dragenter.prevent="onDragEnter($event, sIndex)"
+            @drop="onDrop($event, activeOption, sIndex)"
+            @dragend="onDragEnd"
+          >
+            
+            <!-- 节点：地点/活动 (带拖拽手柄) -->
+            <div class="location-box">
+              <div class="drag-handle" title="按住拖拽以排序">⋮⋮</div>
+              <div class="loc-icon">📍</div>
+              <div class="row" style="flex: 1;">
+                <div class="input-group" style="flex: 1.5;">
+                  <label>到达地点 / 住宿点 / 游玩点</label>
+                  <input v-model="stop.locationName" placeholder="例如: 上海虹桥 / 迪士尼酒店">
+                </div>
+                <div class="input-group" style="flex: 1;">
+                  <label>该地预计花费 (¥) <span style="font-weight: normal;color:#cbd5e1;">餐饮/住宿等</span></label>
+                  <input type="number" v-model.number="stop.locationCost" placeholder="0">
+                </div>
+                <button class="icon-btn" title="复制该地点配置" @click="copyStop(stop, $event)">📋</button>
+                <button v-if="activeOption.stops.length > 1" class="remove-btn" title="删除该节点" @click="removeStop(activeOption, sIndex)">✖</button>
+              </div>
+            </div>
+
+            <!-- 边：交通路线 (多方案切换 & 多换乘段) -->
+            <div class="transit-box" v-if="sIndex < activeOption.stops.length - 1">
+              
+              <!-- 交通路线 Tabs -->
+              <div class="transit-tabs">
+                <div 
+                  v-for="(route, rIdx) in stop.transits" 
+                  :key="route.id"
+                  class="t-tab" 
+                  :class="{ active: stop.activeTransitIndex === rIdx }"
+                  @click="stop.activeTransitIndex = rIdx"
+                >
+                  路线 {{ rIdx + 1 }} 
+                  <span style="font-weight: normal; color: #64748b; font-size: 12px; margin-left: 4px;">({{ getRouteMainMethod(route) }})</span>
+                  <span v-if="stop.transits.length > 1" @click.stop="removeTransitRoute(stop, rIdx)" style="margin-left: 6px; color: #f87171;" title="删除路线">✖</span>
+                </div>
+                <div class="t-tab add" @click="addTransitRoute(stop)">+ 添加交通对比路线</div>
+              </div>
+
+              <!-- 选中的交通路线内容 (支持多换乘段 Segments) -->
+              <div class="segments-container" v-if="stop.transits[stop.activeTransitIndex]">
+                
+                <div 
+                  v-for="(seg, segIdx) in stop.transits[stop.activeTransitIndex].segments" 
+                  :key="seg.id" 
+                  class="segment-row"
+                >
+                  <div v-if="segIdx > 0" class="segment-connector">↳ 换乘</div>
+                  
+                  <div class="input-group" style="flex: 0.8;">
+                    <label>交通工具</label>
+                    <select v-model="seg.method">
+                      <option value="飞机">✈️ 飞机</option>
+                      <option value="高铁">🚄 高铁</option>
+                      <option value="火车">🚞 火车</option>
+                      <option value="大巴">🚌 大巴</option>
+                      <option value="打车">🚕 打车</option>
+                      <option value="地铁">🚇 地铁</option>
+                      <option value="步行">🚶 步行</option>
+                    </select>
+                  </div>
+                  <div class="input-group" style="flex: 0.8;">
+                    <label>花费 (¥)</label>
+                    <input type="number" v-model.number="seg.cost" placeholder="0">
+                  </div>
+                  <div class="input-group" style="flex: 0.8;">
+                    <label>耗时 (H)</label>
+                    <input type="number" step="0.1" v-model.number="seg.duration" placeholder="2.5">
+                  </div>
+                  <div class="input-group" style="flex: 1.5;">
+                    <label>班次 / 备注</label>
+                    <input v-model="seg.notes" placeholder="如: G123 / 提前1h安检">
+                  </div>
+                  <button v-if="stop.transits[stop.activeTransitIndex].segments.length > 1" class="remove-btn" title="删除该换乘段" @click="removeSegment(stop.transits[stop.activeTransitIndex].segments, segIdx)">✖</button>
+                </div>
+                
+                <button class="add-segment-btn" @click="addSegment(stop.transits[stop.activeTransitIndex].segments)">
+                  + 添加换乘段 (如: 打车去机场)
+                </button>
+
+              </div>
+            </div>
+            
+            <!-- 在当前节点之后插入新节点 (悬浮显示) -->
+            <div class="insert-stop-divider" v-if="sIndex < activeOption.stops.length - 1">
+              <span class="insert-stop-btn" @click="insertStop(activeOption, sIndex)">➕ 在此插入新地点</span>
+              <span class="insert-stop-btn paste-btn" v-if="hasCopiedStop" @click="pasteStop(activeOption, sIndex + 1)">📋 粘贴到此处</span>
+            </div>
+
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <div class="add-stop-btn" style="flex: 1; margin-top: 0;" @click="addStop(activeOption)">
+            + 往下添加下一个行程地点
+          </div>
+          <div class="add-stop-btn" style="flex: 1; margin-top: 0; border-color: var(--warning); color: var(--warning); background: #fffbeb;" v-if="hasCopiedStop" @click="pasteStop(activeOption, activeOption.stops.length)">
+            📋 粘贴复制的地点至末尾
+          </div>
+        </div>
+
+        <!-- 方案底部总结与操作 -->
+        <div class="option-footer">
+          <div class="footer-stats">
+            <div class="footer-stat">
+              <div class="label">📍 当前方案总花费 (地点+全部交通)</div>
+              <div class="val" style="color: var(--primary);">¥ {{ getOptionCost(activeOption) }}</div>
+            </div>
+            <div class="footer-stat">
+              <div class="label">⏳ 当前交通总耗时</div>
+              <div class="val">{{ getOptionTime(activeOption) }} H</div>
+            </div>
+          </div>
+          
+          <div class="footer-actions">
+            <button 
+              v-if="activeDay.selectedOptionId !== activeOption.id" 
+              class="btn-primary" 
+              style="padding: 12px 24px; font-size: 16px; font-weight: bold;"
+              @click="activeDay.selectedOptionId = activeOption.id"
+            >
+              将此方案设为当日最终决定
+            </button>
+            <div v-else class="status-adopted">
+              ✅ 已作为当天的最终决定方案
+            </div>
+          </div>
+        </div>
+        
+        <div style="text-align: right; margin-top: 16px;">
+          <button class="btn-danger-text" @click="removeOption(activeDay, activeOption.id)">🗑️ 删除当前整个方案</button>
+        </div>
+
+      </div>
+      <div v-else class="empty-state">
+        此天下还没有方案，请点击上方“+ 新增横向对比方案”。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const days = ref([]);
+        const combos = ref([]); // 方案搭配库
+        const activeDayId = ref(null);
+        
+        // 拖拽相关状态
+        const draggedStopIndex = ref(null);
+        
+        // 剪贴板状态
+        const copiedStopData = ref(null);
+        const hasCopiedStop = computed(() => !!copiedStopData.value);
+
+        // --- 数据模型生成器 (V4 升级：交通变为多段 segment) ---
+        const generateSegment = () => ({
+          id: Date.now() + Math.random(),
+          method: '高铁',
+          cost: 0,
+          duration: 0,
+          notes: ''
+        });
+
+        const generateTransit = () => ({
+          id: Date.now() + Math.random(),
+          segments: [generateSegment()] // V4: 每条路线包含多个换乘段
+        });
+
+        const generateStop = () => ({
+          id: Date.now() + Math.random(),
+          locationName: '',
+          locationCost: 0,
+          transits: [generateTransit()],
+          activeTransitIndex: 0
+        });
+
+        const generateOption = (optCount) => ({
+          id: Date.now() + Math.random(),
+          title: `方案 ${optCount + 1}`,
+          stops: [generateStop(), generateStop()] 
+        });
+
+        const generateDay = () => {
+          const firstOpt = generateOption(0);
+          return {
+            id: Date.now() + Math.random(),
+            title: '',
+            selectedOptionId: firstOpt.id, 
+            activeOptionId: firstOpt.id,   
+            options: [firstOpt]
+          };
+        };
+
+        // --- 核心：向下兼容的数据清洗 (Data Upgrade) ---
+        const upgradeData = (data) => {
+          let daysData = Array.isArray(data) ? data : (data.days || []);
+          let combosData = !Array.isArray(data) && data.combos ? data.combos : [];
+
+          daysData.forEach(day => {
+            day.options.forEach((opt, optIdx) => {
+              if (opt.title === undefined) opt.title = `方案 ${optIdx + 1}`; 
+              
+              opt.stops.forEach(stop => {
+                // V2 -> V3 兼容
+                if (!stop.transits) {
+                  stop.transits = [{
+                    id: Date.now() + Math.random(),
+                    segments: [{ // V3 -> V4 兼容: 直接包装进 segments
+                      id: Date.now() + Math.random(),
+                      method: stop.transitMethod || '高铁',
+                      cost: stop.transitCost || 0,
+                      duration: stop.transitDuration || 0,
+                      notes: stop.transitNotes || ''
+                    }]
+                  }];
+                  stop.activeTransitIndex = 0;
+                } else {
+                  // V3 -> V4 兼容：遍历已有的 transits，如果没有 segments 数组，则转换
+                  stop.transits.forEach(transit => {
+                    if (!transit.segments) {
+                      transit.segments = [{
+                        id: Date.now() + Math.random(),
+                        method: transit.method || '高铁',
+                        cost: transit.cost || 0,
+                        duration: transit.duration || 0,
+                        notes: transit.notes || ''
+                      }];
+                      // 清理旧格式字段
+                      delete transit.method; delete transit.cost; delete transit.duration; delete transit.notes;
+                    }
+                  });
+                }
+                if (stop.activeTransitIndex === undefined) stop.activeTransitIndex = 0;
+              });
+            });
+          });
+
+          return { days: daysData, combos: combosData };
+        };
+
+        // --- 本地存储逻辑 ---
+        const saveData = () => {
+          const exportObj = { version: 4, days: days.value, combos: combos.value };
+          localStorage.setItem('travel_plan_v4', JSON.stringify(exportObj));
+        };
+
+        watch([days, combos], saveData, { deep: true });
+
+        onMounted(() => {
+          // 恢复剪贴板数据
+          const savedCopied = localStorage.getItem('travel_plan_copied_stop');
+          if (savedCopied) {
+            try { copiedStopData.value = JSON.parse(savedCopied); } catch(e){}
+          }
+
+          // 按版本顺序尝试读取
+          const savedDataV4 = localStorage.getItem('travel_plan_v4');
+          const savedDataV3 = localStorage.getItem('travel_plan_v3');
+          const savedDataV2 = localStorage.getItem('travel_plan_v2'); 
+
+          let rawData = null;
+          if (savedDataV4) try { rawData = JSON.parse(savedDataV4); } catch(e){}
+          else if (savedDataV3) try { rawData = JSON.parse(savedDataV3); } catch(e){}
+          else if (savedDataV2) try { rawData = JSON.parse(savedDataV2); } catch(e){}
+
+          if (rawData) {
+            const upgraded = upgradeData(rawData);
+            days.value = upgraded.days;
+            combos.value = upgraded.combos;
+            if (days.value.length > 0) activeDayId.value = days.value[0].id;
+          } else {
+            days.value = [generateDay()];
+            activeDayId.value = days.value[0].id;
+          }
+        });
+
+        // --- 计算属性 ---
+        const activeDay = computed(() => days.value.find(d => d.id === activeDayId.value));
+        const activeOption = computed(() => activeDay.value ? activeDay.value.options.find(o => o.id === activeDay.value.activeOptionId) : null);
+
+        // 提取路线的主要交通方式用于 Tab 显示
+        const getRouteMainMethod = (route) => {
+          if (!route.segments || route.segments.length === 0) return '未知';
+          if (route.segments.length === 1) return route.segments[0].method;
+          return route.segments[0].method + '等..';
+        };
+
+        // --- 具体方案计算 (V4 升级：累加所有换乘段) ---
+        const getOptionCost = (option) => {
+          if (!option) return 0;
+          let total = 0;
+          option.stops.forEach((stop, index) => {
+            total += (stop.locationCost || 0);
+            if (index < option.stops.length - 1) { 
+              const activeTransit = stop.transits[stop.activeTransitIndex];
+              if (activeTransit && activeTransit.segments) {
+                total += activeTransit.segments.reduce((sum, seg) => sum + (seg.cost || 0), 0);
+              }
+            }
+          });
+          return parseFloat(total.toFixed(2));
+        };
+
+        const getOptionTime = (option) => {
+          if (!option) return 0;
+          let total = 0;
+          option.stops.forEach((stop, index) => {
+            if (index < option.stops.length - 1) {
+              const activeTransit = stop.transits[stop.activeTransitIndex];
+              if (activeTransit && activeTransit.segments) {
+                total += activeTransit.segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
+              }
+            }
+          });
+          return parseFloat(total.toFixed(1));
+        };
+
+        const globalTotalCost = computed(() => {
+          return parseFloat(days.value.reduce((total, day) => {
+            const selectedOpt = day.options.find(o => o.id === day.selectedOptionId);
+            return total + getOptionCost(selectedOpt);
+          }, 0).toFixed(2));
+        });
+
+        const globalTotalTime = computed(() => {
+          return parseFloat(days.value.reduce((total, day) => {
+            const selectedOpt = day.options.find(o => o.id === day.selectedOptionId);
+            return total + getOptionTime(selectedOpt);
+          }, 0).toFixed(1));
+        });
+
+        // --- 拖拽排序逻辑 (HTML5 Drag & Drop) ---
+        const onDragStart = (e, index) => {
+          draggedStopIndex.value = index;
+          e.dataTransfer.effectAllowed = 'move';
+          // 可以在这里设置幽灵图
+        };
+        const onDragEnter = (e, index) => {
+          // 仅作为视觉反馈，实际在 drop 触发
+        };
+        const onDrop = (e, option, dropIndex) => {
+          const fromIndex = draggedStopIndex.value;
+          if (fromIndex !== null && fromIndex !== dropIndex) {
+            const movedItem = option.stops.splice(fromIndex, 1)[0];
+            option.stops.splice(dropIndex, 0, movedItem);
+          }
+          draggedStopIndex.value = null;
+        };
+        const onDragEnd = () => {
+          draggedStopIndex.value = null;
+        };
+
+        // --- 方案搭配 (Combo) 管理 ---
+        const saveCurrentCombo = () => {
+          const name = prompt('给当前的打勾方案组合起个名字（如：最省钱搭配、舒适游）：', '新方案组合');
+          if (!name) return;
+          const selections = {};
+          days.value.forEach(day => { if (day.selectedOptionId) selections[day.id] = day.selectedOptionId; });
+          combos.value.push({ id: Date.now() + Math.random(), name, selections });
+        };
+
+        const removeCombo = (id) => {
+          if(!confirm('确定要删除这个方案组合吗？')) return;
+          combos.value = combos.value.filter(c => c.id !== id);
+        };
+
+        const applyCombo = (combo) => {
+          let appliedCount = 0;
+          days.value.forEach(day => {
+            const targetOptId = combo.selections[day.id];
+            if (targetOptId && day.options.find(o => o.id === targetOptId)) {
+              day.selectedOptionId = targetOptId;
+              day.activeOptionId = targetOptId;
+              appliedCount++;
+            }
+          });
+          alert(appliedCount > 0 ? `已成功应用 "${combo.name}"！` : '搭配中的部分方案可能已被删除。');
+        };
+
+        // --- 节点/路线/换乘 操作方法 ---
+        const addDay = () => {
+          const newDay = generateDay();
+          days.value.push(newDay);
+          activeDayId.value = newDay.id;
+        };
+
+        const removeDay = (id) => {
+          if (!confirm('确定要删除这一天的所有行程吗？')) return;
+          const index = days.value.findIndex(d => d.id === id);
+          days.value.splice(index, 1);
+          activeDayId.value = days.value.length > 0 ? days.value[Math.max(0, index - 1)].id : null;
+        };
+
+        const addOption = (day) => {
+          const newOpt = generateOption(day.options.length);
+          day.options.push(newOpt);
+          day.activeOptionId = newOpt.id;
+          if (day.options.length === 1) day.selectedOptionId = newOpt.id;
+        };
+
+        const removeOption = (day, optId) => {
+          if (!confirm('确定要删除这个横向对比方案吗？')) return;
+          const index = day.options.findIndex(o => o.id === optId);
+          day.options.splice(index, 1);
+          if (day.selectedOptionId === optId) day.selectedOptionId = day.options.length > 0 ? day.options[0].id : null;
+          day.activeOptionId = day.options.length > 0 ? day.options[Math.max(0, index - 1)].id : null;
+        };
+
+        const addStop = (option) => { option.stops.push(generateStop()); };
+        
+        // 核心新功能：地点复制与粘贴
+        const copyStop = (stop, event) => {
+          copiedStopData.value = JSON.parse(JSON.stringify(stop));
+          localStorage.setItem('travel_plan_copied_stop', JSON.stringify(copiedStopData.value)); // 缓存，跨页面刷新也能粘帖
+          if (event && event.currentTarget) {
+            const btn = event.currentTarget;
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '✅';
+            setTimeout(() => { btn.innerHTML = oldText; }, 1500);
+          }
+        };
+
+        const regenerateStopIds = (stop) => {
+          const newStop = JSON.parse(JSON.stringify(stop));
+          newStop.id = Date.now() + Math.random(); // 重新生成ID防止拖拽排序错误
+          if (newStop.transits) {
+            newStop.transits.forEach(transit => {
+              transit.id = Date.now() + Math.random();
+              if (transit.segments) {
+                transit.segments.forEach(seg => {
+                  seg.id = Date.now() + Math.random();
+                });
+              }
+            });
+          }
+          return newStop;
+        };
+
+        const pasteStop = (option, index) => {
+          if (!copiedStopData.value) return;
+          const newStop = regenerateStopIds(copiedStopData.value);
+          option.stops.splice(index, 0, newStop);
+        };
+
+        // 核心新功能：任意位置插入节点
+        const insertStop = (option, index) => {
+          option.stops.splice(index + 1, 0, generateStop());
+        };
+
+        const removeStop = (option, index) => { option.stops.splice(index, 1); };
+
+        const addTransitRoute = (stop) => {
+          stop.transits.push(generateTransit());
+          stop.activeTransitIndex = stop.transits.length - 1;
+        };
+        const removeTransitRoute = (stop, index) => {
+          stop.transits.splice(index, 1);
+          if (stop.activeTransitIndex >= stop.transits.length) stop.activeTransitIndex = Math.max(0, stop.transits.length - 1);
+        };
+
+        // 核心新功能：换乘段增删
+        const addSegment = (segments) => { segments.push(generateSegment()); };
+        const removeSegment = (segments, index) => { segments.splice(index, 1); };
+
+        // --- 数据导入导出 ---
+        const exportData = () => {
+          const exportObj = { version: 4, days: days.value, combos: combos.value };
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+          const el = document.createElement('a');
+          el.setAttribute("href", dataStr);
+          el.setAttribute("download", "travel_plan_data_V4.json");
+          document.body.appendChild(el);
+          el.click(); el.remove();
+        };
+
+        const importData = () => {
+          const input = document.createElement('input');
+          input.type = 'file'; input.accept = '.json';
+          input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.readAsText(file, 'UTF-8');
+            reader.onload = e => {
+              try {
+                const parsed = JSON.parse(e.target.result);
+                const upgraded = upgradeData(parsed);
+                days.value = upgraded.days;
+                combos.value = upgraded.combos;
+                if (days.value.length > 0) activeDayId.value = days.value[0].id;
+                alert('数据导入成功，已自动兼容并升级至 V4 格式！');
+              } catch (err) { alert('JSON 解析失败，请检查文件格式。'); }
+            }
+          }
+          input.click();
+        };
+
+        return {
+          days, combos, activeDayId, activeDay, activeOption,
+          draggedStopIndex, onDragStart, onDragEnter, onDrop, onDragEnd,
+          addDay, removeDay, addOption, removeOption, 
+          addStop, insertStop, removeStop,
+          hasCopiedStop, copyStop, pasteStop,
+          addTransitRoute, removeTransitRoute, addSegment, removeSegment,
+          saveCurrentCombo, removeCombo, applyCombo, getRouteMainMethod,
+          getOptionCost, getOptionTime, globalTotalCost, globalTotalTime,
+          exportData, importData
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
