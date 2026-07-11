@@ -533,7 +533,8 @@
             if (days.value.length > 0) activeDayId.value = days.value[0].id;
           } else {
             // V4.1新增：如果用户是第一次打开没有本地数据，自动尝试读取云端 plan.json
-            fetch('./plan.json')
+            // 增加时间戳，防止浏览器缓存旧的空状态
+            fetch('./plan.json?t=' + new Date().getTime())
               .then(res => {
                 if (!res.ok) throw new Error('Not found');
                 return res.json();
@@ -774,7 +775,8 @@
 
         // 新增：手动拉取作者配置的 JSON 数据
         const loadCloudData = () => {
-          fetch('./plan.json')
+          // 增加时间戳强制拉取最新文件
+          fetch('./plan.json?t=' + new Date().getTime())
             .then(res => {
               if (!res.ok) throw new Error('未找到文件');
               return res.json();
